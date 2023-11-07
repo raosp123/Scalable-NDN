@@ -6,5 +6,5 @@ try:
 except KeyboardInterrupt:
     print("We have finished this method")
     
-for dataElement in node.dataStorage:
-    print(str(dataElement))
+for data in node.data_storage:
+    print(str(data))

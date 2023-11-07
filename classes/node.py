@@ -20,16 +20,16 @@ class Node:
             sender_socket, sender_address = listen_socket.accept()
             # We first receive the size of the package
             thread = threading.Thread(target=self.handle_connection,args=(sender_socket, sender_address))
-            thread.start()  
+            thread.start() 
         
-    def handle_connection(self, conn, addr):
-        dataSize=conn.recv(1024)
+    def handle_connection(self, sender_socket, addr):
+        dataSize=sender_socket.recv(1024)
         data_size = int(dataSize.decode("utf-8"))
-        conn.send("ready".encode("utf-8"))
+        sender_socket.send("ready".encode("utf-8"))
         print(f"We are ready to receive {data_size} from {addr}")
-        message = conn.recv(data_size+1024)
+        message = sender_socket.recv(data_size+1024)
         self.handle_message(message.decode("utf-8"),addr)
-        conn.send("Message received correctly".encode("utf-8"))
+        sender_socket.send("Message received correctly".encode("utf-8"))
         
     def send(self,package,port):
         ip=self.RPi_ip
@@ -43,6 +43,7 @@ class Node:
             connection_received_conf=sender_socket.recv(1024)
             print(connection_received_conf)            
         sender_socket.close()
+
     def handle_message(self,message,addr):
         print(f"We have received {message}")
     # # We should probably define this function in a subclass of Node that inherits the elements

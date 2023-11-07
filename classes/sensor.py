@@ -15,7 +15,7 @@ class Sensor(Node):
     
     def publish(self, data_name):
         while True:
-            data={'type': "publish", 'tag':data_name, 'timestamp':int(time.time()), 'temperature':random.uniform(10, 40)}
+            data={'type': "publish", 'tag':data_name, 'timestamp':int(time.time()), 'item': random.uniform(10, 40)}
             package=json.dumps(data)
             self.send(package,self.ParentDevice_port)
             time.sleep(5)
