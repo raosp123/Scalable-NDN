@@ -4,6 +4,7 @@ import threading
 import time
 import random
 import json
+import rsa
 
 class Node:
     def __init__(self,ip,port,ID):
@@ -53,7 +54,57 @@ class Node:
     #         package=json.dumps(data)
     #         self.send(package,port)
     #         time.sleep(20)
+    
+    def create_keys(self):
+        """Creates and saves the keys that the node is going to use
 
+        Returns:
+            publickey, privatekey: the pair of keys that the node is going to use
+        """
+        # we create the keys
+        publickey, privatekey = rsa.newkeys(512)
+        # now we save the keys as file
+        # Save the private key to a file
+        with open(f"private_key{self.id}.pem", "wb") as f:
+            f.write(privatekey.save_pkcs1("PEM"))
+        # Save the public key to a file
+        with open(f"public_key{self.id}.pem", "wb") as f:
+            f.write(publickey.save_pkcs1("PEM"))
+        return publickey, privatekey
+    
+    def encrypt(self, message, public_key_file):
+        """Encrypts the message with the public key.
+
+        Args:
+            message: The message to encrypt.
+            public_key: The public key file to use for encryption.
+
+        Returns:
+            The encrypted message."""
+        
+        with open(public_key_file, "rb") as f:
+            public_key = f.read()
+        public_key = rsa.PublicKey.load_pkcs1(public_key)
+        enc_message = rsa.encrypt(message.encode("utf-8"), public_key)
+        return enc_message
+    
+    def decrypt(self, enc_message, private_key_file):
+        """Decrypts the message with the private key.
+
+        Args:
+            enc_message: The message to decrypt.
+            private_key: The private key file to use for decryption.
+
+        Returns:
+            The decrypted message.
+        """
+        with open(private_key_file, "rb") as f:
+            private_key = f.read()
+        private_key = rsa.PrivateKey.load_pkcs1(private_key)
+        dec_message = rsa.decrypt(enc_message, private_key).decode("utf-8")
+        return dec_message
+        
+        
 
 class Data:
     def __init__(self, tag, timestamp,content):
