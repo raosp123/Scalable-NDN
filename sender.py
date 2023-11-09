@@ -1,6 +1,6 @@
 from classes.sensor import Sensor
 
-node=Sensor("localhost", 9000,"sender", "localhost", 8888)
+node=Sensor("localhost", 9000,"sender", "localhost", 9001)
 try:
     information=node.publish("apt1/temperature/bedroom")
 except KeyboardInterrupt:

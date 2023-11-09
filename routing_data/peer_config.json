@@ -1,0 +1,12 @@
+{
+    "peer_table":{
+        "device_1": "device_2"
+    },
+    "port_map":{
+        "device_1": 9001,
+        "device_2": 9002,
+        "device_3": 9003,
+        "device_4": 9004,
+        "device_5": 9005
+    }
+}

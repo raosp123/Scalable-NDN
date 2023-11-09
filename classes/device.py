@@ -16,20 +16,21 @@ class Device(Node):
     ### TODO: Handle errors that might occur from inccorect formatting of the data
     def handle_message(self, message, addr):
         message=json.loads(message)
-        type = message.pop('type')
+        type = message['type']
         if type=="publish":
             self.update_data_store(message)
         elif type=="request":
             # When we find the data in the datastore
             self.find_data_for_actuator()    
-        elif type == "gossip":
+        elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
-                pass
-            pass   
+                self.save_gossip_data(message)
+                self.forward_gossip_data(message)
 
     ## When sensor uploads data    
     def update_data_store(self, message):
+        message.pop("type")
         print(self.interest_table)
         tag=message.pop('tag')
         if not self.data_exists(tag):
@@ -40,7 +41,6 @@ class Device(Node):
         content=message
         ## TODO: make data class with complex functionality
         self.data_storage[tag].update({timestamp: content.pop("item")})
-        print(json.dumps(self.data_storage, indent=4))
         # Make sure to manage time stamp to delete old versions every so often
 
     ## When actuator requests data
@@ -58,17 +58,14 @@ class Device(Node):
     ## Create and send gossip packet to adjecent peers
     def create_gossip_data(self, tag):
         gossip_packet = {
-            "type": "gossip",
+            "type": "interest_gossip",
             "tag": tag,
             "device_id": self.id
         }
         self.forward_gossip_data(json.dumps(gossip_packet).encode("utf-8"))
 
     ## send gossip packet to adjecent peers
-    def forward_gossip_data(self, packet, stored = False):
-        ## doesnt send the packet if it already has the data in its interest table
-        if stored: return
-        
+    def forward_gossip_data(self, packet):
         ## sends to each direct one hop peers unless it is the original packet creator
         for device_key in self.routing_table.keys():
             if device_key == packet["device_id"]: continue
@@ -76,11 +73,8 @@ class Device(Node):
             if  device_key == device_id:
                 self.send(packet, device_port)
 
-    def save_gossip_data(self, packet):
-        gossip_data = json.loads(packet.decode("utf-8"))
-        pass
-
-        
+    def save_gossip_data(self, gossip_data):
+        self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
 
     def data_exists(self, tag):
         ## Check the interest table for presence of this data type
