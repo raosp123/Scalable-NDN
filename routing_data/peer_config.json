@@ -1,34 +1,29 @@
 {  
-    "device_1":
-	    "peer_table":{
+    "device_1_peer_table": {
 	    	"device_2": "device_2",
 	    	"device_3": "device_2",
 	    	"device_4": "device_2",
 	    	"device_5": "device_5"
 	    },
-    "device_2":
-	    "peer_table":{
+    "device_2_peer_table":{
 		"device_1": "device_1",
 	    	"device_3": "device_3",
 	    	"device_4": "device_4",
 	    	"device_5": "device_4"
 	    },
-    "device_3":
-	    "peer_table":{
+    "device_3_peer_table":{
 		"device_1": "device_2",
 	    	"device_2": "device_2",
 	    	"device_4": "device_2",
 	    	"device_5": "device_2"
 	    },
-    "device_4":
-	    "peer_table":{
+    "device_4_peer_table":{
 		"device_1": "device_5",
 	    	"device_2": "device_2",
 	    	"device_3": "device_2",
 	    	"device_5": "device_5"
 	    },
-    "device_5":
-	    "peer_table":{
+    "device_5_peer_table":{
 		"device_1": "device_1",
 	    	"device_2": "device_1",
 	    	"device_3": "device_4",

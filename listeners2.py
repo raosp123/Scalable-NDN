@@ -4,9 +4,9 @@ import threading
 devices = [
     (9001, "device_1"),
     (9002, "device_2"),
-    (9003, "device_3"),
-    (9004, "device_4"),
-    (9005, "device_5"),
+    # (9003, "device_3"),
+    # (9004, "device_4"),
+    # (9005, "device_5"),
 ]
 
 def create_listner(port, device_id):
@@ -20,7 +20,7 @@ def create_listner(port, device_id):
 
 if __name__ == "__main__":
 
-    create_listner(9004, "device_4")
+    create_listner(9002, "device_2")
 
     # for port, name in devices:
     #     device_thread = threading.Thread(target=create_listner, args=(port, name))
