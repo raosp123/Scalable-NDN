@@ -25,23 +25,24 @@ class Node:
             thread.start() 
         
     #called by listen, tells the sender that it is about to receive a packet of certain data size, then receives the message
-    # TODO: within the try, get back the name of the person receiving, so we can print in the except who we failed to connect to
+    # TODO: within the try, get back the name of the person receiving, so we can print in the except who we failed to connect to (done)
     def handle_connection(self, sender_socket, addr):
         try:
             dataSize=sender_socket.recv(1024)
             data_size = int(dataSize.decode("utf-8"))
             sender_socket.send("ready".encode("utf-8"))
-            print(f"We are ready to receive {data_size} from {addr}")
+            # implementig the to do so we now who is sending the data
+            sender_name = sender_socket.recv(1024).decode("utf-8")
+            print(f"We are ready to receive data with {data_size} bytes from {sender_name} at address {addr}")
             message = sender_socket.recv(data_size+1024)
         except:
-            print("failed to receive data from peer")
+            print(f"Failed to receive data from {sender_name} at address {addr}")
 
         self.handle_message(message.decode("utf-8"),addr)
         sender_socket.send("Message received correctly".encode("utf-8"))
-     
         
     # TODO: process of sending packets, on a device level, we need to pass in what peer we are trying to connect to, use in "packet_receiver variable"
-    def send(self,package,port, packet_receiver="test"):
+    def send(self,package,port, packet_receiver):
         try:
             ip=self.RPi_ip
             sender_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,6 +51,7 @@ class Node:
             response= sender_socket.recv(1024).decode("utf-8")
             if response=="ready":
                 print(f"Device {packet_receiver} is ready to receive message with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
+                sender_socket.send(self.id.encode("utf-8"))
                 sender_socket.send(package.encode("utf-8"))
                 connection_received_conf=sender_socket.recv(1024)
                 print(connection_received_conf)            
@@ -58,7 +60,7 @@ class Node:
             print(f'failed to send packet to {packet_receiver}')
 
     def handle_message(self,message,addr):
-        print(f"We have received {message}")
+        print(f"Received message from {addr}:{message}")
     # # We should probably define this function in a subclass of Node that inherits the elements
     # def generate_data(self, data_name, port):
     #     while True:

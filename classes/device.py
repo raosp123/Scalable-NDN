@@ -15,7 +15,7 @@ class Device(Node):
         #for testing only, fills routing table with "device_X": (next_hop, port), this works with the current gossip implementation
         self.initialize_routing_table()
 
-        print(f'I am {self.id}, table: {self.routing_table}')
+        print(f'I am device {self.id} with routing table: {self.routing_table}')
         
 
 
@@ -79,11 +79,13 @@ class Device(Node):
         ## sends to each direct one hop peers unless it is the original packet creator
         for device_key in self.routing_table.keys():
             if device_key == packet["device_id"]: continue
-            print(f'Sending gossip packet to peer {device_key}')
+            # print(f'Sending gossip packet to peer {device_key}')
             # if using portmaps, read id and port separately
             device_id, device_port = self.routing_table[device_key] 
             if  device_key == device_id:
-                self.send(json.dumps(packet), device_port)
+                # i have changed this
+                self.send(json.dumps(packet), device_port, self.id)
+                print(f"Gossip packet sent to peer {device_key}")
 
     def save_gossip_data(self, gossip_data):
         self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
