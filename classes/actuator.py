@@ -3,7 +3,6 @@ import time
 import random
 import json
 
-
 class Actuator(Node):
     
     def __init__(self, ip, port, ID, dataInterests):
@@ -15,9 +14,11 @@ class Actuator(Node):
         message = {
             "type": "request_data",
             "tag": self.interests,
-            "actuator_id": self.id
+            "actuator_id": self.id,
+            "actuator_port": self.port
         }
         
         # sends the request message
         self.send(json.dumps(message), device_port, device_id)
         print(f"Request message sent to device {device_id}")
+        
