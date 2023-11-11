@@ -31,7 +31,7 @@ class Device(Node):
         elif type=="request_data":
             # When we find the data in the datastore
             print(f"I am looking for your data {message['tag']}")
-            self.find_data_for_actuator(message)    
+            self.find_data_for_actuator(message, addr)    
         elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
@@ -55,11 +55,13 @@ class Device(Node):
         # Make sure to manage time stamp to delete old versions every so often
 
     ## When actuator requests data
-    def find_data_for_actuator(self, message):
+    def find_data_for_actuator(self, message, addr):
         # check if this device has the data requested 
         tag = message['tag']
         if self.data_exists(tag):
-            print(f"I {self.id} have the data {tag}")
+            print(f"I {self.id} know where is the data {tag}")
+            if self.interest_table[tag]==self.id:
+                print(f"I {self.id} have the data {tag}")
         
     
     ## When another device wants to find data
