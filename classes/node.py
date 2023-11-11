@@ -33,7 +33,7 @@ class Node:
             sender_socket.send("ready".encode("utf-8"))
             # implementig the to do so we now who is sending the data
             sender_name = sender_socket.recv(1024).decode("utf-8")
-            print(f"We are ready to receive data with {data_size} bytes from {sender_name} at address {addr}")
+            print(f"Device {self.id} is ready to receive data with {data_size} bytes from {sender_name} at address {addr}")
             message = sender_socket.recv(data_size+1024)
         except:
             print(f"Failed to receive data from {sender_name} at address {addr}")
