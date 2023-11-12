@@ -1,11 +1,13 @@
+from classes.debug_window import DebugManager
 from .node import Node
 import json
 import os.path
 import time
 
 class Device(Node):
-    def __init__(self,ip,port,ID ):
+    def __init__(self,ip,port,ID, debugger: DebugManager):
         super().__init__(ip, port, ID)
+        self.debugger = debugger
         # The data Store needs to store the data kept by data name, so that when another actuator or device asks
         # for it has a way to know if it has it
         self.routing_table={}
@@ -16,7 +18,7 @@ class Device(Node):
         #for testing only, fills routing table with "device_X": (next_hop, port), this works with the current gossip implementation
         self.initialize_routing_table()
 
-        print(f'I am {self.id}, table: {self.routing_table}')
+        self.debug(f'I am device {self.id} with routing table: {self.routing_table}')
         
 
 
@@ -39,7 +41,7 @@ class Device(Node):
                 self.forward_gossip_data(message)
         else:
             return False # failed to decrypt
-        print(self.interest_table)
+        self.debug(self.interest_table)
 
     ## When sensor uploads data, store it and start the gossip process   
     def update_data_store(self, message):
@@ -114,3 +116,9 @@ class Device(Node):
             return True
         
         return False
+    
+    def debug(self, text):
+        try:
+            self.debugger.debug(self.id, str(text))
+        except Exception as e : 
+            print("Failed to debug", e)

@@ -15,6 +15,7 @@ class Node:
     #Starts the listening process for the node, accepts any incoming connection and starts a thread to handle the connection
     def listen(self):
         listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print()
         listen_socket.bind((self.RPi_ip, self.port))
         listen_socket.listen(50)
         while True:
