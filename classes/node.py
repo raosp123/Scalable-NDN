@@ -15,6 +15,7 @@ class Node:
     #Starts the listening process for the node, accepts any incoming connection and starts a thread to handle the connection
     def listen(self):
         listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print()
         listen_socket.bind((self.RPi_ip, self.port))
         listen_socket.listen(50)
         while True:
@@ -40,6 +41,7 @@ class Node:
 
         self.handle_message(message.decode("utf-8"),addr)
         sender_socket.send("Message received correctly".encode("utf-8"))
+        print("\n")
         
     # TODO: process of sending packets, on a device level, we need to pass in what peer we are trying to connect to, use in "packet_receiver variable"
     def send(self,package,port, packet_receiver):
