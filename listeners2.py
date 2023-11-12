@@ -1,4 +1,5 @@
 from classes.device import Device
+from classes.debug_window import DebugManager
 import threading
 
 devices = [
@@ -9,8 +10,8 @@ devices = [
     # (9005, "device_5"),
 ]
 
-def create_listner(port, device_id):
-    device = Device("localhost", port, device_id)
+def create_listner(port, device_id, debugger):
+    device = Device("localhost", port, device_id, debugger)
     print(f"Created {device_id} on port {port}")
     try:
         device.listen()
@@ -19,8 +20,10 @@ def create_listner(port, device_id):
 
 
 if __name__ == "__main__":
-
-    create_listner(9002, "device_2")
+    debugger = DebugManager(devices)
+    for port, name in devices:
+        device_thread = threading.Thread(target=create_listner, args=(port, name, debugger))
+        device_thread.start()
 
     # for port, name in devices:
     #     device_thread = threading.Thread(target=create_listner, args=(port, name))

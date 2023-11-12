@@ -3,6 +3,7 @@ from .node import Node
 import json
 import os.path
 import time
+import base64
 
 class Device(Node):
     def __init__(self,ip,port,ID, debugger: DebugManager):
@@ -33,7 +34,8 @@ class Device(Node):
             self.update_data_store(message)
         elif type=="request_data":
             # When we find the data in the datastore
-            self.find_data_for_actuator()    
+            print(f"Device {self.id} is looking for your data")
+            self.find_data_for_actuator(message)    
         elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
@@ -59,7 +61,27 @@ class Device(Node):
 
     ## When actuator requests data
     def find_data_for_actuator(self, message):
-        pass
+        tag = message['tag']
+        actuator_key = message['public_key']
+        # this means we know where the data is because there is some data
+        if self.data_exists(tag):
+            # this means we have the data then we just send it back
+            if tag in self.data_storage.keys():
+                data_encrypted = self.encrypt(self.data_storage[tag], actuator_key, 'actuator')
+                encoded_data = base64.b64encode(data_encrypted)
+                print(f"I am going to send {encoded_data}")
+                self.send("hello",message['actuator_port'],message['actuator_id'])
+                print(f"Data sent back to {message['actuator_id']}")
+            else:
+                # this means we need to ask other devices
+                pass
+                self.find_data_for_device()
+        
+        # this means there is no data with data tag
+        else:
+            print(f"There is no data {tag} in the network")
+        
+
     
     ## When another device wants to find data
     def find_data_for_device(self, message):
@@ -94,10 +116,10 @@ class Device(Node):
                     if not gossip_sent:
                         try:
                             print(device_port)
-                            self.send(json.dumps(packet), device_port)
+                            self.send(json.dumps(packet), device_port, device_id)
                         except:
-                            print(f'failed to send gossip packet to {device_id}, waiting 30s before trying again')
-                            time.sleep(30)
+                            print(f'failed to send gossip packet to {device_id}, waiting 3s before trying again')
+                            time.sleep(3)
                             continue
                         gossip_sent = True
 
