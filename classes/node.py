@@ -34,12 +34,17 @@ class Node:
             # implementig the to do so we now who is sending the data
             sender_name = sender_socket.recv(1024).decode("utf-8")
             print(f"Device {self.id} is ready to receive data with {data_size} bytes from {sender_name} at address {addr}")
+            #decrypt message with my private key
             message = sender_socket.recv(data_size+1024)
         except:
             print(f"Failed to receive data from {sender_name} at address {addr}")
 
-        self.handle_message(message.decode("utf-8"),addr)
-        sender_socket.send("Message received correctly".encode("utf-8"))
+        #handle messasge received correctly
+        is_successful = self.handle_message(message.decode("utf-8"),addr)
+        if not is_successful:
+            sender_socket.send(f'Failed to decrypt message, ensure you are using the correct publickey for {self.id}'.encode("utf-8"))
+        else:
+            sender_socket.send("Message received correctly".encode("utf-8"))
         
     # TODO: process of sending packets, on a device level, we need to pass in what peer we are trying to connect to, use in "packet_receiver variable"
     def send(self,package,port, packet_receiver):
@@ -52,6 +57,7 @@ class Node:
             if response=="ready":
                 print(f"Device {packet_receiver} is ready to receive message with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
                 sender_socket.send(self.id.encode("utf-8"))
+                #encrypt package with receivers public key, how do we get the public of the device
                 sender_socket.send(package.encode("utf-8"))
                 connection_received_conf=sender_socket.recv(1024)
                 print(connection_received_conf)            

@@ -1,6 +1,7 @@
 from .node import Node
 import json
 import os.path
+import time
 
 class Device(Node):
     def __init__(self,ip,port,ID ):
@@ -15,7 +16,7 @@ class Device(Node):
         #for testing only, fills routing table with "device_X": (next_hop, port), this works with the current gossip implementation
         self.initialize_routing_table()
 
-        print(f'I am device {self.id} with routing table: {self.routing_table}')
+        print(f'I am {self.id}, table: {self.routing_table}')
         
 
 
@@ -30,14 +31,14 @@ class Device(Node):
             self.update_data_store(message)
         elif type=="request_data":
             # When we find the data in the datastore
-            print(f"I am looking for your data {message['tag']}")
-            self.find_data_for_actuator(message)    
+            self.find_data_for_actuator()    
         elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
                 self.save_gossip_data(message)
                 self.forward_gossip_data(message)
-
+        else:
+            return False # failed to decrypt
         print(self.interest_table)
 
     ## When sensor uploads data, store it and start the gossip process   
@@ -56,17 +57,7 @@ class Device(Node):
 
     ## When actuator requests data
     def find_data_for_actuator(self, message):
-        # check if this device has the data requested 
-        tag = message['tag']
-        if self.data_exists(tag):
-            print(f"I {self.id} know where is the data {tag}")
-            if self.interest_table[tag]==self.id:
-                print(f"I {self.id} have the data {tag}")
-                self.send(json.dumps(self.data_storage), message['actuator_port'], message['actuator_id'])
-                print(f"I have send the data to {message['actuator_id']}")
-        else:
-            print(f"The data {tag} is not on the network")
-        
+        pass
     
     ## When another device wants to find data
     def find_data_for_device(self, message):
@@ -90,18 +81,26 @@ class Device(Node):
         ## sends to each direct one hop peers unless it is the original packet creator
         for device_key in self.routing_table.keys():
             if device_key == packet["device_id"]: continue
-            # print(f'Sending gossip packet to peer {device_key}')
+            print(f'Sending gossip packet to peer {device_key}')
             # if using portmaps, read id and port separately
             device_id, device_port = self.routing_table[device_key] 
             if  device_key == device_id:
-                # i have changed this
-                self.send(json.dumps(packet), device_port, self.id)
-                print(f"Gossip packet sent to peer {device_key}")
+                gossip_sent = False
+                max_tries = 20
+                # keep trying to send gossip packet for 20 attempts, handles the case where device might be working, but cannot connect to any peer
+                for i in range(20,1,0):
+                    if not gossip_sent:
+                        try:
+                            self.send(json.dumps(packet), device_port)
+                        except:
+                            print(f'failed to send gossip packet to {device_id}, waiting 30s before trying again')
+                            time.sleep(30)
+                            continue
+                        gossip_sent = True
 
     def save_gossip_data(self, gossip_data):
         self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
         
-
     def initialize_routing_table(self):
         # for testing only, initialize routing info
         with open(os.path.join((os.path.split(os.path.dirname(__file__))[0]), "routing_data/peer_config_tuples.json")) as json_file:
