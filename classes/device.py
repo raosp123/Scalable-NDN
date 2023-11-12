@@ -90,9 +90,10 @@ class Device(Node):
                 gossip_sent = False
                 max_tries = 20
                 # keep trying to send gossip packet for 20 attempts, handles the case where device might be working, but cannot connect to any peer
-                for i in range(20,1,0):
+                for i in range(0, max_tries):
                     if not gossip_sent:
                         try:
+                            print(device_port)
                             self.send(json.dumps(packet), device_port)
                         except:
                             print(f'failed to send gossip packet to {device_id}, waiting 30s before trying again')

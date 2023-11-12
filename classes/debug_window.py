@@ -40,12 +40,14 @@ class DeviceLoggingWindow:
         self.log_data = []
         self.texts = []
 
-    def update_window_text(self):
-        for text in self.texts: 
+    def empty_window_text(self):
+        for text in self.texts:
             text.config(state=NORMAL)
-            text.destroy()
+            text.destroy()      
         self.texts = []
 
+    def update_window_text(self):
+        self.empty_window_text()
         for text in self.log_data: 
             text_w = Text(self.frame, width=150, height=text.count('\n') + 1)
             
@@ -71,6 +73,7 @@ class DeviceLoggingWindow:
 
         def close_frame():
             self.frame_on = False
+            self.empty_window_text()
             self.frame.destroy()
         self.frame = Toplevel(self.master)
         self.frame_on = True
