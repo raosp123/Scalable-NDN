@@ -1,3 +1,5 @@
+import base64
+import os
 import socket
 import sys
 import threading
@@ -11,6 +13,8 @@ class Node:
         self.RPi_ip=ip
         self.port=port
         self.id=ID
+        
+        self.load_keys()
         
     #Starts the listening process for the node, accepts any incoming connection and starts a thread to handle the connection
     def listen(self):
@@ -28,46 +32,41 @@ class Node:
     #called by listen, tells the sender that it is about to receive a packet of certain data size, then receives the message
     # TODO: within the try, get back the name of the person receiving, so we can print in the except who we failed to connect to (done)
     def handle_connection(self, sender_socket, addr):
+        sender_name = "Sender"
         try:
             dataSize=sender_socket.recv(1024)
             data_size = int(dataSize.decode("utf-8"))
             sender_socket.send("ready".encode("utf-8"))
             # implementig the to do so we now who is sending the data
             sender_name = sender_socket.recv(1024).decode("utf-8")
-            print(f"Device {self.id} is ready to receive data with {data_size} bytes from {sender_name} at address {addr}")
             #decrypt message with my private key
-            message = sender_socket.recv(data_size+1024)
-        except:
-            print(f"Failed to receive data from {sender_name} at address {addr}")
-
-        #handle messasge received correctly
-        is_successful = self.handle_message(message.decode("utf-8"),addr)
-        if not is_successful:
-            sender_socket.send(f'Failed to decrypt message, ensure you are using the correct publickey for {self.id}'.encode("utf-8"))
-        else:
-            sender_socket.send("Message received correctly".encode("utf-8"))
+            message = self.decrypt(sender_socket.recv(data_size+1024))
+        except Exception as e:
+            print(f"Failed to receive data from {sender_name} at address {addr}", e)
         
     # TODO: process of sending packets, on a device level, we need to pass in what peer we are trying to connect to, use in "packet_receiver variable"
-    def send(self,package,port, packet_receiver):
+    def send(self,package, port, packet_receiver):
         try:
             ip=self.RPi_ip
             sender_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sender_socket.connect((ip, port))
-            sender_socket.send(str(sys.getsizeof(package)).encode("utf-8"))
-            response= sender_socket.recv(1024).decode("utf-8")
+            encrpyted_packet = self.encrypt(package, packet_receiver)
+
+            sender_socket.send(str(sys.getsizeof(encrpyted_packet)).encode("utf-8"))
+            response = sender_socket.recv(1024).decode("utf-8")
             if response=="ready":
-                print(f"Device {packet_receiver} is ready to receive message with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
+                print(f"Device {packet_receiver} is ready to receive message {package} with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
                 sender_socket.send(self.id.encode("utf-8"))
                 #encrypt package with receivers public key, how do we get the public of the device
-                sender_socket.send(package.encode("utf-8"))
+                sender_socket.send(encrpyted_packet)
                 connection_received_conf=sender_socket.recv(1024)
                 print(connection_received_conf)            
             sender_socket.close()
-        except:
-            print(f'failed to send packet to {packet_receiver}')
+        except Exception as e:
+            print(f'failed to send packet to {packet_receiver} , {e}')
 
     def handle_message(self,message,addr):
-        print(f"Received message from {addr}:{message}")
+        print(f"{self.id}Received message from {addr}:{message}")
     # # We should probably define this function in a subclass of Node that inherits the elements
     # def generate_data(self, data_name, port):
     #     while True:
@@ -76,50 +75,48 @@ class Node:
     #         self.send(package,port)
     #         time.sleep(20)
     
-    def create_keys(self, type_node):
+    def load_keys(self):
         """Creates and saves the keys that the node is going to use
 
         Returns:
             publickey, privatekey: the pair of keys that the node is going to use
         """
         # we create the keys
-        publickey, privatekey = rsa.newkeys(512)
-        # now we save the keys as file
-        # Save the private key to a file
-        if type_node=='actuator':
-            with open(f"keys/actuator_keys/private_key{self.id}.pem", "wb") as f:
-                f.write(privatekey.save_pkcs1("PEM"))
-            # Save the public key to a file
-            with open(f"keys/actuator_keys/public_key{self.id}.pem", "wb") as f:
+        if os.path.exists(f"{self.id}_key_private.pem"):
+            with open(f"{self.id}_key_public.pem", "rb") as f:
+                publickey = f.read()
+            with open(f"{self.id}_key_private.pem", "rb") as f:
+                privatekey = f.read()
+            self.keys = (privatekey, publickey)
+        else:
+            publickey, privatekey = rsa.newkeys(2048)
+            # now we save the keys as file
+            # Save the private key to a file
+            with open(f"{self.id}_key_public.pem", "wb") as f:
                 f.write(publickey.save_pkcs1("PEM"))
-        elif type_node=='device':
-            with open(f"keys/device_keys/private_key{self.id}.pem", "wb") as f:
+            with open(f"{self.id}_key_private.pem", "wb") as f:
                 f.write(privatekey.save_pkcs1("PEM"))
-            # Save the public key to a file
-            with open(f"keys/device_keys/public_key{self.id}.pem", "wb") as f:
-                f.write(publickey.save_pkcs1("PEM"))
-        return publickey, privatekey
+            self.keys = (privatekey, publickey)
     
-    def encrypt(self, message, public_key_file, type_node):
+    def encrypt(self, message, node_id):
         """Encrypts the message with the public key.
 
         Args:
             message: The message to encrypt.
-            public_key: The public key file to use for encryption.
 
         Returns:
             The encrypted message."""
-        if type_node == 'actuator':
-            with open(f"keys/actuator_keys/{public_key_file}", "rb") as f:
-                public_key = f.read()
-        elif type_node=='device':
-            with open(f"keys/device_keys/{public_key_file}", "rb") as f:
-                public_key = f.read()
-        public_key = rsa.PublicKey.load_pkcs1(public_key)
-        enc_message = rsa.encrypt(json.dumps(message).encode("utf-8"), public_key)
-        return enc_message
+        with open(f"{node_id}_key_public.pem", "rb") as f:
+            public_key = f.read()
+            loaded_key = rsa.PublicKey.load_pkcs1(public_key)
+            utf_message = json.dumps(message).encode("utf-8")
+            enc_message = rsa.encrypt(utf_message, loaded_key)
+            #enc_message = rsa.encrypt(json.dumps(message).encode("utf-8"), rsa.PublicKey.load_pkcs1(public_key))
+            return base64.b64encode(enc_message)
+
+        
     
-    def decrypt(self, enc_message, private_key_file, type_node):
+    def decrypt(self, enc_message):
         """Decrypts the message with the private key.
 
         Args:
@@ -129,14 +126,8 @@ class Node:
         Returns:
             The decrypted message.
         """
-        if type_node=='actuator':
-            with open(f"keys/actuator_keys/{private_key_file}", "rb") as f:
-                private_key = f.read()
-        elif type_node=='device':
-            with open(f"keys/device_keys/{private_key_file}", "rb") as f:
-                private_key = f.read()
-        private_key = rsa.PrivateKey.load_pkcs1(private_key)
-        dec_message = rsa.decrypt(enc_message, private_key).decode("utf-8")
+        private_key = self.keys[0]
+        dec_message = json.loads(rsa.decrypt(base64.b64decode(enc_message), rsa.PrivateKey.load_pkcs1(self.keys[0])).decode("utf-8"))
         return dec_message
         
         

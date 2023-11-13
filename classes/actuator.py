@@ -20,9 +20,9 @@ class Actuator(Node):
         }
         
         # sends the request message
-        self.send(json.dumps(message), device_port, device_id)
-        self.listen()
+        self.send(message, device_port, device_id)
         print(f"Request message sent to device {device_id}")
         
-
+    # def handle_message(self, message, addr):
+    #     return super().handle_message(message, addr)
         

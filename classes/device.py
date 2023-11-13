@@ -27,23 +27,25 @@ class Device(Node):
         # We also need to add available connections
     
     ### TODO: Handle errors that might occur from inccorect formatting of the data
-    def handle_message(self, message, addr):
-        message=json.loads(message)
+    def handle_message(self, message, addr):        
         type = message['type']
         if type=="publish":
+            self.debug("Recieved publish packet: " + str(message))
             self.update_data_store(message)
         elif type=="request_data":
+            self.debug("Recieved request packet: " + str(message))
             # When we find the data in the datastore
             print(f"Device {self.id} is looking for your data")
             self.find_data_for_actuator(message)    
         elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
+                self.debug("Recieved gossip packet: " + str(message))
                 self.save_gossip_data(message)
                 self.forward_gossip_data(message)
         else:
+            self.debug("Recieved unrecognised packet: " + str(message))
             return False # failed to decrypt
-        self.debug(self.interest_table)
 
     ## When sensor uploads data, store it and start the gossip process   
     def update_data_store(self, message):
@@ -67,11 +69,8 @@ class Device(Node):
         if self.data_exists(tag):
             # this means we have the data then we just send it back
             if tag in self.data_storage.keys():
-                data_encrypted = self.encrypt(self.data_storage[tag], actuator_key, 'actuator')
-                encoded_data = base64.b64encode(data_encrypted)
-                print(f"I am going to send {encoded_data}")
-                self.send("hello",message['actuator_port'],message['actuator_id'])
-                print(f"Data sent back to {message['actuator_id']}")
+                self.send(self.data_storage[tag], message['actuator_port'],message['actuator_id'])
+                self.debug(f"Data sent back to {message['actuator_id']}")
             else:
                 # this means we need to ask other devices
                 pass
@@ -79,7 +78,7 @@ class Device(Node):
         
         # this means there is no data with data tag
         else:
-            print(f"There is no data {tag} in the network")
+            self.debug(f"There is no data {tag} in the network")
         
 
     
@@ -105,10 +104,11 @@ class Device(Node):
         ## sends to each direct one hop peers unless it is the original packet creator
         for device_key in self.routing_table.keys():
             if device_key == packet["device_id"]: continue
-            print(f'Sending gossip packet to peer {device_key}')
+            
             # if using portmaps, read id and port separately
             device_id, device_port = self.routing_table[device_key] 
             if  device_key == device_id:
+                self.debug(f'Sending gossip packet to peer {device_key}')
                 gossip_sent = False
                 max_tries = 20
                 # keep trying to send gossip packet for 20 attempts, handles the case where device might be working, but cannot connect to any peer
@@ -116,9 +116,9 @@ class Device(Node):
                     if not gossip_sent:
                         try:
                             print(device_port)
-                            self.send(json.dumps(packet), device_port, device_id)
+                            self.send(packet, device_port, device_id)
                         except:
-                            print(f'failed to send gossip packet to {device_id}, waiting 3s before trying again')
+                            self.debug(f'failed to send gossip packet to {device_id}, waiting 3s before trying again')
                             time.sleep(3)
                             continue
                         gossip_sent = True
