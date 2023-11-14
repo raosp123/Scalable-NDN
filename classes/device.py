@@ -14,15 +14,13 @@ class Device(Node):
         self.routing_table={}
         self.interest_table={}
         self.data_storage={}
-        self.search_buffer = {}
+        self.actuator_buffer={}
 
         #for testing only, fills routing table with "device_X": (next_hop, port), this works with the current gossip implementation
         self.initialize_routing_table()
 
         self.debug(f'I am device {self.id} with routing table: {self.routing_table}')
         
-
-
         # We need to add the interest table
         # We also need to add available connections
     
@@ -32,11 +30,10 @@ class Device(Node):
         if type=="publish":
             self.debug("Recieved publish packet: " + str(message))
             self.update_data_store(message)
-        elif type=="request_data":
+        elif type=="data_request":
             self.debug("Recieved request packet: " + str(message))
             # When we find the data in the datastore
-            print(f"Device {self.id} is looking for your data")
-            self.find_data_for_actuator(message)    
+            self.handle_data_request(message)    
         elif type == "interest_gossip":
             stored = self.data_exists(message["tag"])
             if not stored:
@@ -62,42 +59,115 @@ class Device(Node):
         # Make sure to manage time stamp to delete old versions every so often
 
     ## When actuator requests data
-    def find_data_for_actuator(self, message):
+    def handle_data_request(self, message):
         tag = message['tag']
-        # this means we know where the data is because there is some data
-        if self.data_exists(tag):
-            # this means we have the data then we just send it back
-            if tag in self.data_storage.keys():
-                message_packet = {
-                    "type": "data_response",
-                    "tag": message['tag'],
-                    "data": self.data_storage[tag]
-                }
-                self.send(message_packet, message['actuator_port'], message['actuator_id'])
-                self.debug(f"Data sent back to {message['actuator_id']}")
-            else:
-                # this means we need to ask other devices
-                self.find_data_for_device()
-        
-        # this means there is no data with data tag
+        step = message['step']
+
+        match step:
+
+            case 1: #from actuator -> device
+                try:
+                    self.update_actuator_buffer(message)
+                    if self.data_exists(tag):
+                        # if we have the data ourselves
+                        if tag in self.data_storage.keys():
+                            self.debug(f'I have the data requested from {message["src"]}')
+
+                            message = {
+                                "type": "data_request",
+                                "step": 1,
+                                "tag": message["tag"],
+                                "data": self.data_storage[tag],
+                                "src": self.id,
+                                "dst": ""
+                            }
+
+                            self.return_data_to_actuator(message) #return to actuator
+
+                        else:
+                            # if there is already a request for this data, don't send packet
+                            message = {
+                                "type": "data_request",
+                                "step": 2,
+                                "tag": message["tag"],
+                                "data": "",
+                                "src": self.id,
+                                "dst": self.interest_table[tag]
+                            }
+                            
+                            device_id, device_port = self.routing_table[message["dst"]]
+                            self.send(message, device_port, device_id)
+                    else:
+                        self.debug(f"There is no data {tag} in the network")
+                        deny_message = {
+                            "type": "data_not_found",
+                            "tag": "none"
+                        }
+                        actuator_id, actuator_port = message["src"]
+                        self.send(deny_message, actuator_port, actuator_id)
+                except Exception as e:
+                    print(f'failed to send data back to actuator, Error:\n {e}')
+            case 2:
+
+                #if we are the device with the requested data, change step and set dst as original device
+                if self.id == message["dst"]: 
+                    self.debug(f'I have the data requested from {message["src"]}')  
+                    message = {
+                            "type": "data_request",
+                            "step": 3,
+                            "tag": message["tag"],
+                            "data": self.data_storage[tag],
+                            "src": self.id,
+                            "dst": message["src"]
+                    }
+
+                device_id, device_port = self.routing_table[message["dst"]]
+                self.debug(f'forwarding request to {message["dst"]}, next hop is {device_id}') 
+                self.send(message, device_port, device_id)
+
+            case 3:
+                    # if I am the final destination, check my actuator buffer, then send to all actuators
+
+                    if self.id == message["dst"]:
+                        self.debug(f'I have received the data from {message["src"]}, now sending to my actuators')
+                        self.return_data_to_actuator(message)
+                        
+                    else:
+                        device_id, device_port = self.routing_table[message["dst"]]
+                        self.debug(f'I am not the destination for the data forwarding to {message["dst"]}, next hop is {device_id}')
+                        self.send(message, device_port, device_id)
+
+            case _:
+                print("incorrect step index found in packet")
+
+
+    # function saves ongoing data requests for actuators or deletes an interest tag from the buffer
+    def update_actuator_buffer(self, message, delete=False):
+
+        tag = message["tag"]
+        if not delete:
+            
+            if not (tag in self.actuator_buffer):
+
+                self.actuator_buffer[tag] = []
+
+            self.actuator_buffer[tag].append(message["src"])
         else:
-            self.debug(f"There is no data {tag} in the network")
-            deny_message = {
-                "type": "data_not_found",
-                "tag": "none"
-            }
-            self.send(deny_message, message['actuator_port'], message['actuator_id'])
-
+            self.actuator_buffer.pop(tag)
+           
+        self.debug(f"tag {'added' if not delete else 'deleted'}Actuator Buffer:\n{self.actuator_buffer}")
         
 
-    
-    ## When another device wants to find data
-    def find_data_for_device(self, ):
-        pass 
+    # called by the device who has the data, starts sending back to original src
+    def return_data_to_actuator(self, message):
 
-    ## When data is to be sent to a device
-    def forward_data_to_device(self):
-        pass
+        #send data to actuator
+        for actuator_id, actuator_port in self.actuator_buffer[message["tag"]]:
+
+            self.send(message, actuator_port, actuator_id)
+            self.debug(f"Data sent back to {actuator_id}")
+
+        self.update_actuator_buffer(message, delete=True)
 
     ## Create and send gossip packet to adjecent peers
     def create_gossip_data(self, tag):
@@ -132,6 +202,7 @@ class Device(Node):
                             time.sleep(3)
                             continue
                         gossip_sent = True
+
     def save_gossip_data(self, gossip_data):
         self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
         

@@ -12,11 +12,15 @@ class Actuator(Node):
         self.parent = parent_device
         
     def request_data(self):
+
+        #reformat this to case 1
         message = {
-            "type": "request_data",
+            "type": "data_request",
+            "step": 1,
             "tag": self.interests,
-            "actuator_id": self.id,
-            "actuator_port": self.port
+            "data": "",
+            "src": (self.id,self.port),
+            "dst": ""
         }
         
         # sends the request message
