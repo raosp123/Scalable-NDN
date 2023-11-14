@@ -29,5 +29,6 @@ class Actuator(Node):
             self.close()
         else:
             print(message)
+            self.close()
 
         

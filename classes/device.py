@@ -68,11 +68,15 @@ class Device(Node):
         if self.data_exists(tag):
             # this means we have the data then we just send it back
             if tag in self.data_storage.keys():
-                self.send(self.data_storage[tag], message['actuator_port'], message['actuator_id'])
+                message_packet = {
+                    "type": "data_response",
+                    "tag": message['tag'],
+                    "data": self.data_storage[tag]
+                }
+                self.send(message_packet, message['actuator_port'], message['actuator_id'])
                 self.debug(f"Data sent back to {message['actuator_id']}")
             else:
                 # this means we need to ask other devices
-                pass
                 self.find_data_for_device()
         
         # this means there is no data with data tag
@@ -88,7 +92,7 @@ class Device(Node):
 
     
     ## When another device wants to find data
-    def find_data_for_device(self, message):
+    def find_data_for_device(self, ):
         pass 
 
     ## When data is to be sent to a device

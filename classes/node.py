@@ -68,7 +68,7 @@ class Node:
                 sender_socket.send(str(self.id).encode("utf-8"))
                 #encrypt package with receivers public key, how do we get the public of the device
                 sender_socket.send(encrpyted_packet)
-                connection_received_conf=sender_socket.recv(1024)          
+                connection_received_conf=sender_socket.recv(1024)        
             sender_socket.close()
         except Exception as e:
             print(f'failed to send packet to {packet_receiver} , {e}')
