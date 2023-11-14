@@ -16,5 +16,5 @@ class Sensor(Node):
     
     def publish(self, data_name):
         data={'type': "publish", 'tag':data_name, 'timestamp':int(time.time()), 'item': random.uniform(10, 40)}
-        package=json.dumps(data)
+        package=data
         self.send(package,self.ParentDevice_port, self.ParentDevice_id)

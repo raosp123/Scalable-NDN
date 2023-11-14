@@ -3,11 +3,11 @@ import json
 import re
 
 class DebugManager:
-    def __init__(self, ids, window_name = "Debug Window"):
+    def __init__(self, ids, device_close, window_name = "Debug Window"):
         self.tk_root = Tk()
         self.tk_root.title(window_name)
         self.log_windows: dict[str, DeviceLoggingWindow] = {}
-
+        self.device_close = device_close
         for (_, id) in ids:
             self.log_windows[id] = DeviceLoggingWindow(id, self.tk_root)
 
@@ -18,8 +18,11 @@ class DebugManager:
         self.log_windows[device_name].add_log(text)
 
     def main_loop(self):
-
+        def close_window():
+            self.tk_root.destroy()
+            self.device_close()
         try:
+            self.tk_root.protocol("WM_DELETE_WINDOW", close_window)
             self.tk_root.mainloop()
         except KeyboardInterrupt:
             print("Stopping debugger")

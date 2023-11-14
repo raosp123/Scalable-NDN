@@ -64,12 +64,11 @@ class Device(Node):
     ## When actuator requests data
     def find_data_for_actuator(self, message):
         tag = message['tag']
-        actuator_key = message['public_key']
         # this means we know where the data is because there is some data
         if self.data_exists(tag):
             # this means we have the data then we just send it back
             if tag in self.data_storage.keys():
-                self.send(self.data_storage[tag], message['actuator_port'],message['actuator_id'])
+                self.send(self.data_storage[tag], message['actuator_port'], message['actuator_id'])
                 self.debug(f"Data sent back to {message['actuator_id']}")
             else:
                 # this means we need to ask other devices
@@ -79,6 +78,12 @@ class Device(Node):
         # this means there is no data with data tag
         else:
             self.debug(f"There is no data {tag} in the network")
+            deny_message = {
+                "type": "data_not_found",
+                "tag": "none"
+            }
+            self.send(deny_message, message['actuator_port'], message['actuator_id'])
+
         
 
     
@@ -102,7 +107,9 @@ class Device(Node):
     ## send gossip packet to adjecent peers
     def forward_gossip_data(self, packet):
         ## sends to each direct one hop peers unless it is the original packet creator
+        counter = 0 
         for device_key in self.routing_table.keys():
+            counter += 1
             if device_key == packet["device_id"]: continue
             
             # if using portmaps, read id and port separately
@@ -115,14 +122,12 @@ class Device(Node):
                 for i in range(0, max_tries):
                     if not gossip_sent:
                         try:
-                            print(device_port)
                             self.send(packet, device_port, device_id)
                         except:
                             self.debug(f'failed to send gossip packet to {device_id}, waiting 3s before trying again')
                             time.sleep(3)
                             continue
                         gossip_sent = True
-
     def save_gossip_data(self, gossip_data):
         self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
         
