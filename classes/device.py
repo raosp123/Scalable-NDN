@@ -1,4 +1,3 @@
-from classes.debug_window import DebugManager
 from .node import Node
 import json
 import os.path

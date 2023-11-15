@@ -8,10 +8,10 @@ devices = [
     "device_4",
     "device_5",
 ]
-logging_port = 30300
+logging_port = 30302
 def main():
     
-    logger = LogManager(30300, devices)
+    logger = LogManager(logging_port, devices)
     logger_window = threading.Thread(target=logger.listen)
     logger_window.start()
     logger.main_loop()
