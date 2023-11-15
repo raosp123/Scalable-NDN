@@ -6,8 +6,8 @@ import json
 
 class Actuator(Node):
     
-    def __init__(self, ip, port, ID, dataInterests, parent_device):
-        super().__init__(ip,port,ID)
+    def __init__(self, ip, port, ID, dataInterests, parent_device, logging_port):
+        super().__init__(ip,port,ID,logging_port)
         self.interests=dataInterests
         self.parent = parent_device
         

@@ -9,7 +9,8 @@ import json
 import rsa
 
 class Node:
-    def __init__(self,ip,port,ID):
+    def __init__(self, ip, port, ID, logging_port):
+        self.logging_port = logging_port
         self.RPi_ip=ip
         self.port=port
         self.id=ID
@@ -142,6 +143,21 @@ class Node:
         self.is_listening = False
         self.listen_socket.shutdown(socket.SHUT_RDWR)
         self.listen_socket.close()
+
+    def log(self, text):
+        log_message = {
+            "device_name": self.id,
+            "log_statement": text
+        }
+        packet = json.dumps(log_message)
+
+        logging_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        logging_socket.connect((self.RPi_ip, 30300))
+
+
+        logging_socket.send(packet.encode("utf-8"))
+
+
 
 class Data:
     def __init__(self, tag, timestamp,content):

@@ -1,6 +1,7 @@
 from classes.device import Device
-from classes.debug_window import DebugManager
-import threading
+import multiprocessing
+
+logging_port = 30300
 
 devices = [
     (9001, "device_1"),
@@ -10,8 +11,8 @@ devices = [
     (9005, "device_5"),
 ]
 device_list = []
-def create_listner(port, device_id, debugger):
-    device = Device("localhost", port, device_id, debugger)
+def create_listner(port, device_id):
+    device = Device("localhost", port, device_id, logging_port)
     device_list.append(device)
     print(f"Created {device_id} on port {port}")
     try:
@@ -21,17 +22,10 @@ def create_listner(port, device_id, debugger):
         device.close()
 
 
-def close_devices():
-    for device in device_list:
-        device.close()
-
 
 if __name__ == "__main__":
-    debugger = DebugManager(devices, close_devices)
-
 
     for port, name in devices:
-        device_thread = threading.Thread(target=create_listner, args=(port, name, debugger))
-        device_thread.start()
+        device_process = multiprocessing.Process(target=create_listner, args=(port, name))
+        device_process.start()
     
-    debugger.main_loop()

@@ -5,8 +5,8 @@ import json
 
 class Sensor(Node):
     
-    def __init__(self, ip, port, ID,ParentDevice_ip,ParentDevice_port,ParentDevice_id):
-        super().__init__(ip, port, ID)
+    def __init__(self, ip, port, ID,ParentDevice_ip,ParentDevice_port,ParentDevice_id, logging_port):
+        super().__init__(ip, port, ID, logging_port)
         self.set_parent_device(ParentDevice_ip,ParentDevice_port,ParentDevice_id)
         
     def set_parent_device(self, ParentDevice_ip,ParentDevice_port,ParentDevice_id):
