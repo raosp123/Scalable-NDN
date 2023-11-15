@@ -1,6 +1,6 @@
 from classes.sensor import Sensor
 import os.path
-logging_port = 30300
+logging_port = 30303
 node=Sensor("localhost", 9000,"sensor_temp_bedroom", "localhost", 9002, "device_2", logging_port)
 
 try:

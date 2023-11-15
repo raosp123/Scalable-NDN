@@ -8,7 +8,7 @@ devices = [
     "device_4",
     "device_5",
 ]
-logging_port = 30302
+logging_port = 30303
 def main():
     
     logger = LogManager(logging_port, devices)

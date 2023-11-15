@@ -69,7 +69,6 @@ class DeviceLog:
 
 
     def update_log(self, text):
-        print(self.device_name, text)
         new_text = []
         old_text = text.split("\n")
         for t in old_text:

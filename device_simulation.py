@@ -1,7 +1,7 @@
 from classes.device import Device
 import multiprocessing
 
-logging_port = 30302
+logging_port = 30303
 
 devices = [
     (9001, "device_1"),

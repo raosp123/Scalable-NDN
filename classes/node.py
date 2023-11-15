@@ -152,7 +152,7 @@ class Node:
         packet = json.dumps(log_message)
 
         logging_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        logging_socket.connect((self.RPi_ip, 30300))
+        logging_socket.connect((self.RPi_ip, self.logging_port))
 
 
         logging_socket.send(packet.encode("utf-8"))

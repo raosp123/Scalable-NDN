@@ -61,82 +61,81 @@ class Device(Node):
         tag = message['tag']
         step = message['step']
 
-        match step:
 
-            case 1: #from actuator -> device
-                try:
-                    self.update_actuator_buffer(message)
-                    if self.data_exists(tag):
-                        # if we have the data ourselves
-                        if tag in self.data_storage.keys():
-                            self.log(f'I have the data requested from {message["src"]}')
+        if int(step) == 1: #from actuator -> device
+            try:
+                self.update_actuator_buffer(message)
+                if self.data_exists(tag):
+                    # if we have the data ourselves
+                    if tag in self.data_storage.keys():
+                        self.log(f'I have the data requested from {message["src"]}')
 
-                            message = {
-                                "type": "data_request",
-                                "step": 1,
-                                "tag": message["tag"],
-                                "data": self.data_storage[tag],
-                                "src": self.id,
-                                "dst": ""
-                            }
-
-                            self.return_data_to_actuator(message) #return to actuator
-
-                        else:
-                            # if there is already a request for this data, don't send packet
-                            message = {
-                                "type": "data_request",
-                                "step": 2,
-                                "tag": message["tag"],
-                                "data": "",
-                                "src": self.id,
-                                "dst": self.interest_table[tag]
-                            }
-                            
-                            device_id, device_port = self.routing_table[message["dst"]]
-                            self.send(message, device_port, device_id)
-                    else:
-                        self.log(f"There is no data {tag} in the network")
-                        deny_message = {
-                            "type": "data_not_found",
-                            "tag": "none"
-                        }
-                        actuator_id, actuator_port = message["src"]
-                        self.send(deny_message, actuator_port, actuator_id)
-                except Exception as e:
-                    print(f'failed to send data back to actuator, Error:\n {e}')
-            case 2:
-
-                #if we are the device with the requested data, change step and set dst as original device
-                if self.id == message["dst"]: 
-                    self.log(f'I have the data requested from {message["src"]}')  
-                    message = {
+                        message = {
                             "type": "data_request",
-                            "step": 3,
+                            "step": 1,
                             "tag": message["tag"],
                             "data": self.data_storage[tag],
                             "src": self.id,
-                            "dst": message["src"]
-                    }
+                            "dst": ""
+                        }
 
-                device_id, device_port = self.routing_table[message["dst"]]
-                self.log(f'forwarding request to {message["dst"]}, next hop is {device_id}') 
-                self.send(message, device_port, device_id)
+                        self.return_data_to_actuator(message) #return to actuator
 
-            case 3:
-                    # if I am the final destination, check my actuator buffer, then send to all actuators
-
-                    if self.id == message["dst"]:
-                        self.log(f'I have received the data from {message["src"]}, now sending to my actuators')
-                        self.return_data_to_actuator(message)
-                        
                     else:
+                        # if there is already a request for this data, don't send packet
+                        message = {
+                            "type": "data_request",
+                            "step": 2,
+                            "tag": message["tag"],
+                            "data": "",
+                            "src": self.id,
+                            "dst": self.interest_table[tag]
+                        }
+                        
                         device_id, device_port = self.routing_table[message["dst"]]
-                        self.log(f'I am not the destination for the data forwarding to {message["dst"]}, next hop is {device_id}')
                         self.send(message, device_port, device_id)
+                else:
+                    self.log(f"There is no data {tag} in the network")
+                    deny_message = {
+                        "type": "data_not_found",
+                        "tag": "none"
+                    }
+                    actuator_id, actuator_port = message["src"]
+                    self.send(deny_message, actuator_port, actuator_id)
+            except Exception as e:
+                print(f'failed to send data back to actuator, Error:\n {e}')
+        elif int(step) ==  2:
 
-            case _:
-                print("incorrect step index found in packet")
+            #if we are the device with the requested data, change step and set dst as original device
+            if self.id == message["dst"]: 
+                self.log(f'I have the data requested from {message["src"]}')  
+                message = {
+                        "type": "data_request",
+                        "step": 3,
+                        "tag": message["tag"],
+                        "data": self.data_storage[tag],
+                        "src": self.id,
+                        "dst": message["src"]
+                }
+
+            device_id, device_port = self.routing_table[message["dst"]]
+            self.log(f'forwarding request to {message["dst"]}, next hop is {device_id}') 
+            self.send(message, device_port, device_id)
+
+        elif int(step) ==  3:
+                # if I am the final destination, check my actuator buffer, then send to all actuators
+
+                if self.id == message["dst"]:
+                    self.log(f'I have received the data from {message["src"]}, now sending to my actuators')
+                    self.return_data_to_actuator(message)
+                    
+                else:
+                    device_id, device_port = self.routing_table[message["dst"]]
+                    self.log(f'I am not the destination for the data forwarding to {message["dst"]}, next hop is {device_id}')
+                    self.send(message, device_port, device_id)
+
+        else:
+            print("incorrect step index found in packet")
 
 
     # function saves ongoing data requests for actuators or deletes an interest tag from the buffer
