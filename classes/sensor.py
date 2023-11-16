@@ -1,6 +1,6 @@
 from .node import Node
 import time
-import random
+import numpy as np
 import json
 
 class Sensor(Node):
@@ -14,7 +14,8 @@ class Sensor(Node):
         self.ParentDevice_port=ParentDevice_port
         self.ParentDevice_id = ParentDevice_id
     
-    def publish(self, data_name):
-        data={'type': "publish", 'tag':data_name, 'timestamp':int(time.time()), 'item': random.uniform(10, 40)}
+    def publish(self, data_name, item):
+        # we generate random data every schedule seconds until we pause it by keyboard interrupt
+        data={'type': "publish", 'tag':data_name, 'timestamp':int(time.time()), 'item': item}
         package=data
         self.send(package,self.ParentDevice_port, self.ParentDevice_id)
