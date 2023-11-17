@@ -67,6 +67,13 @@ class DeviceLog:
         self.tab_controller.add(self.tab, text=self.device_name)
         self.tab_controller.pack(expand = 1, fill="both")
 
+        self.scroll_bar = Scrollbar(self.tab)
+        self.scroll_bar.pack(side=RIGHT, fill=Y)
+
+        self.list = Listbox(self.tab, yscrollcommand = self.scroll_bar.set, width=150)
+        self.list.pack( side = LEFT, fill = BOTH )
+        self.scroll_bar.config(command=self.list.yview)
+
 
     def update_log(self, text):
         new_text = []
@@ -78,14 +85,13 @@ class DeviceLog:
         text = "".join(new_text)
         self.update_tab_content(text)
 
-    def empty_text_widgets(self):
-        for text in self.log_text_widgets:
-            text.destroy()
-
     def update_tab_content(self, text):
-        text_w = Text(self.tab, width=150, height=text.count('\n') + 1)
-        text_w.insert(END, text)
-        text_w.pack()
-        self.log_text_widgets.append(text_w)
+        # text_w = Text(self.tab, width=150, height=text.count('\n') + 1)
+        # text_w.insert(END, text)
+        # text_w.pack()
+        # self.log_text_widgets.append(text_w)
+        self.list.insert(END, text + "\n")
+
+        pass
 
 
