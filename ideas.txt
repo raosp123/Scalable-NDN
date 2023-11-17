@@ -1,62 +1,64 @@
-	
-info existing device needs about new device joining the network:
+Joining:		
+	info existing device needs about new device joining the network:
 
-	its a manual setup, where you use a terminal on a device, to manually connect a new device as its peer
-	
-	1. the public key of the new peer
+		its a manual setup, where you use a terminal on a device, to manually connect a new device as its peer
+		
+		1. the public key of the new peer
 
-	2. the port of the new peer
+		2. the port of the new peer
 
-	3. assign a name to the new peer that fits within the network (done automatically)
+		3. assign a name to the new peer that fits within the network (done automatically)
 
-					
-We assume any new device joining the network, is empty and has no existing data or sensors connected to it already.
+						
+	We assume any new device joining the network, is empty and has no existing data or sensors connected to it already.
 
-[							]
+	[							]
 
-initiate_join --new_peer_public_key=wdawdwadawd --new_peer_port=9002
+	initiate_join --new_peer_public_key=wdawdwadawd --new_peer_port=9002
 
-[							]
+	[							]
 
-once an existing device facilitates a new node joining, the existing device tells all of its peers that they can reach the new device through themselves
-
-
-	1. existing device encrypts test packet with new device public key, sends it to the new device over the port. Waits for new device
-	   to decrypt packet and send
-
-		[type: network_authenticate, pbk-authenticator:dev1_pbkey, encypt_message: a2W$j] -> new joining device
+	once an existing device facilitates a new node joining, the existing device tells all of its peers that they can reach the new device through themselves
 
 
-		new device decrypts message, then encrypts with dev1_pbkey(), and sends back to the dev1.
+		1. existing device encrypts test packet with new device public key, sends it to the new device over the port. Waits for new device
+		to decrypt packet and send
 
-			Dev1 handles one of two cases:
-					1. new device successfully decrypted message:
-							send message ("Sucess")
-							name_joining_node(
-								search my routing table, get the highest value device_{num}, add 1 to it
-								and name the new node device{max_num+1}
-							)
-							named_successfully = send packet to new device saying[type: "naming_request", your_new_name: "device_X"]
-							if (named_successfully)
-								routing_gossip() #tells the rest of network how to reach the new device
+			[type: network_authenticate, pbk-authenticator:dev1_pbkey, encypt_message: a2W$j] -> new joining device
+
+
+			new device decrypts message, then encrypts with dev1_pbkey(), and sends back to the dev1.
+
+				Dev1 handles one of two cases:
+						1. new device successfully decrypted message:
+								send message ("Sucess")
+								name_joining_node(
+									search my routing table, get the highest value device_{num}, add 1 to it
+									and name the new node device{max_num+1}
+								)
+								named_successfully = send packet to new device saying[type: "naming_request", your_new_name: "device_X"]
+								if (named_successfully)
+									routing_gossip() #tells the rest of network how to reach the new device
+								
+						2. it fails
+							send message ("you failed to join the network")
 							
-					2. it fails
-						send message ("you failed to join the network")
-						
-			New device()
-					1. if we have succesfully joined:
-						
-						wait for our name, then name ourselves.
-						
-						send confirmation back to exisiting device
-						
-						
-						
-Edge Cases:
+				New device()
+						1. if we have succesfully joined:
+							
+							wait for our name, then name ourselves.
+							
+							send confirmation back to exisiting device
+							
+							
+							
+	Edge Cases:
 
-     1. device disconnects, but gets new data
-	if device can't communicate with network, but it got new interests from a new sensor, it waits to send gossip data packet, keeps trying
-	until it succeeds (Should be done)
+		1. device disconnects, but gets new data
+		if device can't communicate with network, but it got new interests from a new sensor, it waits to send gossip data packet, keeps trying
+		until it succeeds (Should be done)
+
+Unique Nodes:
 
 	
 

@@ -18,10 +18,5 @@ def create_listner(port, device_id):
         device.close()
 
 
-
-if __name__ == "__main__":
-
-    for port, name in devices:
-        device_process = multiprocessing.Process(target=create_listner, args=(port, name))
-        device_process.start()
+create_listner(9001, "device_1")
     
