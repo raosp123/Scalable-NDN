@@ -43,6 +43,26 @@ if [[ "${KILL_ALL}" == "TRUE" ]] ; then
     echo "Processing $line"
     kill $line
     done
+
+    SENSORS=`ps -ef | grep "[s]ensor*.*_simulation.py"| awk '{print $2}'`
+    
+    echo $SENSORS
+
+    echo $SENSORS | while read -r line ; do
+    echo "Processing $line"
+    kill $line
+    done
+
+
+    LOGGER=`ps -ef | grep "[p]ython3 run_logger.py"| awk '{print $2}'`
+    
+    echo $LOGGER
+
+    echo $LOGGER | while read -r line ; do
+    echo "Processing $line"
+    kill $line
+    done
+
     # your code goes here
 
 fi

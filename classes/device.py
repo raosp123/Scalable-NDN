@@ -186,7 +186,7 @@ class Device(Node):
             # if using portmaps, read id and port separately
             device_id, device_port = self.routing_table[device_key] 
             if  device_key == device_id:
-                self.log(f'Sending gossip packet to peer {device_key}')
+                #self.log(f'Sending gossip packet to peer {device_key}')
                 gossip_sent = False
                 max_tries = 20
                 # keep trying to send gossip packet for 20 attempts, handles the case where device might be working, but cannot connect to any peer

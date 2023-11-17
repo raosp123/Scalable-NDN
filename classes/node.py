@@ -30,6 +30,7 @@ class Node:
                 sender_socket, sender_address = self.listen_socket.accept()
             except OSError as e:
                 if self.is_listening:
+                    socket.close(self.listen_socket)
                     raise e
                 sys.exit(0)
 
