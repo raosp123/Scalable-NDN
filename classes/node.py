@@ -42,48 +42,36 @@ class Node:
     # TODO: within the try, get back the name of the person receiving, so we can print in the except who we failed to connect to (done)
     def handle_connection(self, sender_socket, addr):
         sender_name = "Sender"
-        try:
-            dataSize=sender_socket.recv(1024)
-            data_size = int(dataSize.decode("utf-8"))
-            sender_socket.send("ready".encode("utf-8"))
-            # implementig the to do so we now who is sending the data
-            sender_name = sender_socket.recv(1024).decode("utf-8")
-            #decrypt message with my private key
-            message = self.decrypt(sender_socket.recv(data_size+1024))
-            sender_socket.send("message_recieved".encode("utf-8"))
-            self.handle_message(message, addr)
-        except Exception as e:
-            print(f"Failed to receive data from {sender_name} at address {addr}", e)
+
+        dataSize=sender_socket.recv(1024)
+        data_size = int(dataSize.decode("utf-8"))
+        sender_socket.send("ready".encode("utf-8"))
+        # implementig the to do so we now who is sending the data
+        sender_name = sender_socket.recv(1024).decode("utf-8")
+        #decrypt message with my private key
+        message = self.decrypt(sender_socket.recv(data_size+1024))
+        sender_socket.send("message_recieved".encode("utf-8"))
+        self.handle_message(message, addr)
         
     # TODO: process of sending packets, on a device level, we need to pass in what peer we are trying to connect to, use in "packet_receiver variable"
     def send(self,package, port, packet_receiver):
-        try:
-            ip=self.RPi_ip
-            sender_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sender_socket.connect((ip, port))
-            encrpyted_packet = self.encrypt(package, packet_receiver)
+        ip=self.RPi_ip
+        sender_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sender_socket.connect((ip, port))
+        encrpyted_packet = self.encrypt(package, packet_receiver)
 
-            sender_socket.send(str(sys.getsizeof(encrpyted_packet)).encode("utf-8"))
-            response = sender_socket.recv(1024).decode("utf-8")
-            if response=="ready":
-                ##print(f"Device {packet_receiver} is ready to receive message {package} with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
-                sender_socket.send(str(self.id).encode("utf-8"))
-                #encrypt package with receivers public key, how do we get the public of the device
-                sender_socket.send(encrpyted_packet)
-                connection_received_conf=sender_socket.recv(1024)        
-            sender_socket.close()
-        except Exception as e:
-            print(f'failed to send packet to {packet_receiver} , {e}')
+        sender_socket.send(str(sys.getsizeof(encrpyted_packet)).encode("utf-8"))
+        response = sender_socket.recv(1024).decode("utf-8")
+        if response=="ready":
+            ##print(f"Device {packet_receiver} is ready to receive message {package} with {sys.getsizeof(package)} bytes") # we use our ip here because we assume localhost, we need better console debugging here
+            sender_socket.send(str(self.id).encode("utf-8"))
+            #encrypt package with receivers public key, how do we get the public of the device
+            sender_socket.send(encrpyted_packet)
+            connection_received_conf=sender_socket.recv(1024)        
+        sender_socket.close()
 
     def handle_message(self,message,addr):
         pass
-    # # We should probably define this function in a subclass of Node that inherits the elements
-    # def generate_data(self, data_name, port):
-    #     while True:
-    #         data={'tag':data_name, 'timestamp':int(time.time()), 'temperature':random.uniform(10, 40)}
-    #         package=json.dumps(data)
-    #         self.send(package,port)
-    #         time.sleep(20)
     
     def load_keys(self):
         """Creates and saves the keys that the node is going to use

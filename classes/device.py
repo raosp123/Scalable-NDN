@@ -1,4 +1,5 @@
 from .node import Node
+from .route_getter import RouteGetter
 import json
 import os.path
 import time
@@ -9,18 +10,13 @@ class Device(Node):
         super().__init__(ip, port, ID, logging_port)
         # The data Store needs to store the data kept by data name, so that when another actuator or device asks
         # for it has a way to know if it has it
-        self.routing_table={}
+        self.routing_table = RouteGetter()
         self.interest_table={}
         self.data_storage={}
         self.actuator_buffer={}
 
-        #for testing only, fills routing table with "device_X": (next_hop, port), this works with the current gossip implementation
-        self.initialize_routing_table()
-
-        self.log(f'I am device {self.id} with routing table: {self.routing_table}')
+        self.log(f'I am device {self.id}')
         
-        # We need to add the interest table
-        # We also need to add available connections
     
     ### TODO: Handle errors that might occur from inccorect formatting of the data
     def handle_message(self, message, addr):        
@@ -63,47 +59,56 @@ class Device(Node):
 
 
         if int(step) == 1: #from actuator -> device
-            try:
-                self.update_actuator_buffer(message)
-                if self.data_exists(tag):
-                    # if we have the data ourselves
-                    if tag in self.data_storage.keys():
-                        self.log(f'I have the data requested from {message["src"]}')
+            self.update_actuator_buffer(message)
+            if self.data_exists(tag):
+                # if we have the data ourselves
+                if tag in self.data_storage.keys():
+                    self.log(f'I have the data requested from {message["src"]}')
 
+                    message = {
+                        "type": "data_request",
+                        "step": 1,
+                        "tag": message["tag"],
+                        "data": self.data_storage[tag],
+                        "src": self.id,
+                        "dst": ""
+                    }
+
+                    self.return_data_to_actuator(message) #return to actuator
+
+                else:
+                    message = {
+                        "type": "data_request",
+                        "step": 2,
+                        "tag": message["tag"],
+                        "data": "",
+                        "src": self.id,
+                        "dst": self.interest_table[tag]
+                    }
+                    
+                    device_id, device_port = self.routing_table.get_next_hop(self.id, message["dst"])
+                    success = self.try_send(message, device_port, device_id, message["dst"])
+                    if not success:
                         message = {
                             "type": "data_request",
-                            "step": 1,
+                            "step": 3,
                             "tag": message["tag"],
-                            "data": self.data_storage[tag],
+                            "data": f"Node {message['dst']} couldn't be accessed",
                             "src": self.id,
-                            "dst": ""
-                        }
-
-                        self.return_data_to_actuator(message) #return to actuator
-
-                    else:
-                        # if there is already a request for this data, don't send packet
-                        message = {
-                            "type": "data_request",
-                            "step": 2,
-                            "tag": message["tag"],
-                            "data": "",
-                            "src": self.id,
-                            "dst": self.interest_table[tag]
+                            "dst": message["src"]
                         }
                         
-                        device_id, device_port = self.routing_table[message["dst"]]
-                        self.send(message, device_port, device_id)
-                else:
-                    self.log(f"There is no data {tag} in the network")
-                    deny_message = {
-                        "type": "data_not_found",
-                        "tag": "none"
-                    }
-                    actuator_id, actuator_port = message["src"]
-                    self.send(deny_message, actuator_port, actuator_id)
-            except Exception as e:
-                print(f'failed to send data back to actuator, Error:\n {e}')
+                        device_id, device_port = self.routing_table.get_next_hop(self.id, message["src"])
+                        success = self.try_send(message, device_port, device_id, message["dst"])
+                        
+            else:
+                self.log(f"There is no data {tag} in the network")
+                deny_message = {
+                    "type": "data_not_found",
+                    "tag": "none"
+                }
+                actuator_id, actuator_port = message["src"]
+                self.try_send(deny_message, actuator_port, actuator_id)
         elif int(step) ==  2:
 
             #if we are the device with the requested data, change step and set dst as original device
@@ -118,9 +123,9 @@ class Device(Node):
                         "dst": message["src"]
                 }
 
-            device_id, device_port = self.routing_table[message["dst"]]
+            device_id, device_port = self.routing_table.get_next_hop(self.id, message["dst"])
             self.log(f'forwarding request to {message["dst"]}, next hop is {device_id}') 
-            self.send(message, device_port, device_id)
+            self.try_send(message, device_port, device_id, message["dst"])
 
         elif int(step) ==  3:
                 # if I am the final destination, check my actuator buffer, then send to all actuators
@@ -130,9 +135,9 @@ class Device(Node):
                     self.return_data_to_actuator(message)
                     
                 else:
-                    device_id, device_port = self.routing_table[message["dst"]]
+                    device_id, device_port = self.routing_table.get_next_hop(self.id, message["dst"])
                     self.log(f'I am not the destination for the data forwarding to {message["dst"]}, next hop is {device_id}')
-                    self.send(message, device_port, device_id)
+                    self.try_send(message, device_port, device_id, message["dst"])
 
         else:
             print("incorrect step index found in packet")
@@ -161,7 +166,7 @@ class Device(Node):
         #send data to actuator
         for actuator_id, actuator_port in self.actuator_buffer[message["tag"]]:
 
-            self.send(message, actuator_port, actuator_id)
+            self.try_send(message, actuator_port, actuator_id)
             self.log(f"Data sent back to {actuator_id}")
 
         self.update_actuator_buffer(message, delete=True)
@@ -179,40 +184,48 @@ class Device(Node):
     def forward_gossip_data(self, packet):
         ## sends to each direct one hop peers unless it is the original packet creator
         counter = 0 
-        for device_key in self.routing_table.keys():
+        for device_key in self.routing_table.keys(self.id):
             counter += 1
             if device_key == packet["device_id"]: continue
             
             # if using portmaps, read id and port separately
-            device_id, device_port = self.routing_table[device_key] 
+            device_id, device_port = self.routing_table.get_next_hop(self.id, device_key)
             if  device_key == device_id:
-                #self.log(f'Sending gossip packet to peer {device_key}')
-                gossip_sent = False
-                max_tries = 20
+                # self.log(f'Sending gossip packet to peer {device_key}')
                 # keep trying to send gossip packet for 20 attempts, handles the case where device might be working, but cannot connect to any peer
-                for i in range(0, max_tries):
-                    if not gossip_sent:
-                        try:
-                            self.send(packet, device_port, device_id)
-                        except:
-                            self.log(f'failed to send gossip packet to {device_id}, waiting 3s before trying again')
-                            time.sleep(3)
-                            continue
-                        gossip_sent = True
+                self.try_send(packet, device_port, device_id)
 
     def save_gossip_data(self, gossip_data):
         self.interest_table[gossip_data["tag"]] = gossip_data["device_id"]
         
-    def initialize_routing_table(self):
-        # for testing only, initialize routing info
-        with open(os.path.join((os.path.split(os.path.dirname(__file__))[0]), "routing_data/peer_config_tuples.json")) as json_file:
-            data = json.load(json_file)
-            self.routing_table = data[f'{self.id}_peer_table']
 
     def data_exists(self, tag):
         ## Check the interest table for presence of this data type
         data_types = self.interest_table.keys()
         if tag in data_types:
             return True
+        
+        return False
+    
+    def try_send(self, packet, port, id, specific_dest = None):
+        temp_router = self.routing_table
+        attempts = 0
+        while attempts <= 20:
+            attempts += 1
+            try:
+                self.send(packet, port, id)
+                return True
+            except Exception as e:
+                if specific_dest == id:
+                    return False
+
+            if specific_dest:
+                try:
+                    temp_router.remove_from_graph(id)
+                    id, port = temp_router.get_next_hop(self.id, specific_dest)
+                except Exception:
+                    return False
+                
+                
         
         return False
