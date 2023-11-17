@@ -1,7 +1,7 @@
 import threading
 from classes.actuator import Actuator
 logging_port = 30303
-node_actuator = Actuator('localhost', 9008, 'actuator_1', 'farm1/wind/field1', ("device_5", 9005), logging_port)
+node_actuator = Actuator('localhost', 9008, 'actuator_1', 'farm1/light/cows_room', ("device_5", 9005), logging_port)
 def actuator_listen(actuator: Actuator):
     actuator.listen()
 
