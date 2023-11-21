@@ -4,7 +4,12 @@ import multiprocessing
 logging_port = 30303
 
 devices = [
-    (9004, "device_4")]
+    (9001, "device_1"),
+    (9002, "device_2"),
+    (9003, "device_3"),
+    (9004, "device_4"),
+    (9005, "device_5"),
+]
 device_list = []
 def create_listner(port, device_id):
     device = Device("localhost", port, device_id, logging_port)
@@ -18,5 +23,8 @@ def create_listner(port, device_id):
 
 
 
-create_listner(9004, "device_4")
-    
+if __name__ == "__main__":
+
+    for port, name in devices:
+        device_process = multiprocessing.Process(target=create_listner, args=(port, name))
+        device_process.start()

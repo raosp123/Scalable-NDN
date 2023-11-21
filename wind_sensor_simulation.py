@@ -10,19 +10,17 @@ node4 = Sensor("localhost", 9027,"sensor_wind_storage_equipment", "localhost", 9
 node5 = Sensor("localhost", 9028,"sensor_wind_vineyard", "localhost", 9004, "device_4", logging_port)
 
 try:
-    while True:
         # the metrics are in m/s
         node1_item = np.random.uniform(0,8)
         node2_item = np.random.uniform(0,5)
         node3_item = np.random.uniform(0,10)
         node4_item = np.random.uniform(0,7)
         node5_item = np.random.uniform(0,4.8)
-        information1=node1.publish("farm1/wind/field1", node1_item)
+        information1 = node1.publish("farm1/wind/field1", node1_item)
         information2 = node2.publish("farm1/wind/crop_canopy", node2_item)
         information3 = node3.publish("farm1/wind/grazing_area", node3_item)
         information4 = node4.publish("farm1/wind/storage_equipment", node4_item)
         information5 = node5.publish("farm1/wind/vineyard", node5_item)
-        time.sleep(40)
 except KeyboardInterrupt:
     print("Sensor finished publishing data")
 

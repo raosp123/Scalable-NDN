@@ -15,7 +15,8 @@ while test $# -gt 0; do
 		;;
 		
 	*)
-		break
+		echo "no valid flag specified, please use --kill_all or --process=device_num"
+        break
 		;;
 	esac
 done	

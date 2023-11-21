@@ -10,7 +10,6 @@ node4 = Sensor("localhost", 9022,"sensor_temp_storage_equipment", "localhost", 9
 node5 = Sensor("localhost", 9023,"sensor_temp_water_tank", "localhost", 9004, "device_4", logging_port)
 
 try:
-    while True:
         # the metrics are in degrees
         node1_item = np.random.uniform(10,40)
         node2_item = np.random.uniform(0,30)
@@ -22,7 +21,6 @@ try:
         information3 = node3.publish("farm1/temperature/barn", node3_item)
         information4 = node4.publish("farm1/temperature/storage_equipment", node4_item)
         information5 = node5.publish("farm1/temperature/water_tank", node5_item)
-        time.sleep(20)
 except KeyboardInterrupt:
     print("Sensor finished publishing data")
 

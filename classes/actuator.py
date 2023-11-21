@@ -11,13 +11,16 @@ class Actuator(Node):
         self.interests=dataInterests
         self.parent = parent_device
         
-    def request_data(self):
+    def request_data(self, tag):
 
         #reformat this to case 1
+
+        
+
         message = {
             "type": "data_request",
             "step": 1,
-            "tag": self.interests,
+            "tag": tag,
             "data": "",
             "src": (self.id,self.port),
             "dst": ""
@@ -30,9 +33,8 @@ class Actuator(Node):
     def handle_message(self, message, addr):
         if message["type"] == "data_not_found":
             print(message["type"])
-            self.close()
         else:
             print(message)
-            self.close()
+            
 
         

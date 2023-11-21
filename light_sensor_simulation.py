@@ -10,7 +10,6 @@ node4 = Sensor("localhost", 9037,"sensor_light_storage_equipment", "localhost", 
 node5 = Sensor("localhost", 9038,"sensor_light_gate", "localhost", 9004, "device_4", logging_port)
 
 try:
-    while True:
         # the metrics are in LUX
         node1_item = np.random.uniform(10000,20000)
         node2_item = np.random.uniform(20000,100000)
@@ -22,7 +21,6 @@ try:
         information3 = node3.publish("farm1/light/bedroom", node3_item)
         information4 = node4.publish("farm1/light/storage_equipment", node4_item)
         information5 = node5.publish("farm1/light/gate", node5_item)
-        time.sleep(120)
 except KeyboardInterrupt:
     print("Sensor finished publishing data")
 

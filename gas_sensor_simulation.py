@@ -10,7 +10,6 @@ node4 = Sensor("localhost", 9047,"sensor_gas_kitchen", "localhost", 9005, "devic
 node5 = Sensor("localhost", 9048,"sensor_gas_composting_area", "localhost", 9004, "device_4", logging_port)
 
 try:
-    while True:
         # the metrics are parts per million (ppm)
         node1_item = np.random.uniform(0,3)
         node2_item = np.random.uniform(0,25)
@@ -22,7 +21,7 @@ try:
         information3 = node3.publish("farm1/gas_manure_storage", node3_item)
         information4 = node4.publish("farm1/gas/kitchen", node4_item)
         information5 = node5.publish("farm1/gas/composting_area", node5_item)
-        time.sleep(35)
+
 except KeyboardInterrupt:
     print("Sensor finished publishing data")
 

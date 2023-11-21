@@ -10,7 +10,6 @@ node4 = Sensor("localhost", 9042,"sensor_soil_moisture_garden", "localhost", 900
 node5 = Sensor("localhost", 9043,"sensor_soil_moisture_greenhouse_bed", "localhost", 9004, "device_4", logging_port)
 
 try:
-    while True:
         # the metrics are in percentage between (0,1)
         node1_item = np.random.uniform(0,1)
         node2_item = np.random.uniform(0,1)
@@ -22,7 +21,6 @@ try:
         information3 = node3.publish("farm1/soil_moisture_dripirrigation1", node3_item)
         information4 = node4.publish("farm1/soil_moisture/garden", node4_item)
         information5 = node5.publish("farm1/soil_moisture/greenhouse_bed", node5_item)
-        time.sleep(240)
 except KeyboardInterrupt:
     print("Sensor finished publishing data")
 
