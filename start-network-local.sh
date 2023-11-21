@@ -8,7 +8,15 @@ python3 run_logger.py &
 
 sleep 8
 
-python3 devices.py &
+#bring up all devices and sensors
+
+for i in $(seq 1 5); do 
+
+echo "starting device${i}"
+python3 device${i}_simulation.py &
+sleep 1
+
+done
 
 echo "starting dust sensors"
 python3 dust_sensor_simulation.py &
