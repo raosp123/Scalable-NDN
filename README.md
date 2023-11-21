@@ -58,7 +58,7 @@ This README is intended to be read from top to bottom, as to prevent the same in
 
             If you have access to the trinityVPN, you can ssh directly to the target pi and open up a reverse tunnel using `ssh -R 30303:localhost:30303 user@rasp-XXX.scss.tcd.ie`
 
-            If the vpn is down, you need to do a double hop over the macneill server. First run `ssh -R 30303:localhost:30303 user user@macneill.scss.tcd.ie` before running the second tunnel command above
+            If the vpn is down, you need to do a double hop over the macneill server. First run `ssh -R 30303:localhost:30303 user@macneill.scss.tcd.ie` before running the second tunnel command above
 
             This will redirect traffic from port 30303 on the Pi, to 30303 on our local machine, where our logger will be running
 
